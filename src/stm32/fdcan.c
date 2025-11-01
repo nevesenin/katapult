@@ -313,10 +313,18 @@ can_init(void)
     SOC_CAN->TXBC = tbsa | (ARRAY_SIZE(MSG_RAM.TXFIFO) << FDCAN_TXBC_TFQS_Pos);
     SOC_CAN->TXESC = 7 << FDCAN_TXESC_TBDS_Pos;
 #endif
+    /* Note: STM32G0/G4 have fixed message RAM addresses at SRAMCAN_BASE,
+     * no explicit configuration needed */
 
     /* Leave the initialisation mode */
     SOC_CAN->CCCR &= ~FDCAN_CCCR_CCE;
     SOC_CAN->CCCR &= ~FDCAN_CCCR_INIT;
+    barrier();
+
+    /* Wait for peripheral to exit INIT mode */
+    while (SOC_CAN->CCCR & FDCAN_CCCR_INIT)
+        ;
+    barrier();
 
     /*##-2- Configure the CAN Filter #######################################*/
     canhw_set_filter(0);
